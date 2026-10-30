@@ -2,6 +2,54 @@
 const BASE_AMOUNT = 4500000; // 기본 교육비 450만원
 const VAT_RATE = 0.1; // 부가세 10%
 
+// Google Form 연동 설정 (https://forms.gle/RHdsgmiMEPujcZSY8)
+const GOOGLE_FORM_CONFIG = {
+    shortUrl: 'https://forms.gle/RHdsgmiMEPujcZSY8',
+    actionUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSfOGSLhdVi0yMfR-OdLALkyziG_K3jcV-CbY0piYxBtpLGWpQ/formResponse',
+    viewUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSfOGSLhdVi0yMfR-OdLALkyziG_K3jcV-CbY0piYxBtpLGWpQ/viewform',
+    fields: {
+        name: 'entry.1263860059',         // 이름 (필수)
+        phone: 'entry.1509891244',        // 연락처 (필수)
+        email: 'entry.1531492417',        // 이메일 (필수)
+        company: 'entry.1603467298',      // 회사명 (필수)
+        position: 'entry.1403528295',     // 직책 (필수)
+        industryType: 'entry.14490918'    // 업종 구분 (드롭다운)
+    }
+};
+
+// 구글 폼으로 신청 데이터 자동 전송
+async function submitToGoogleForm(formData) {
+    const params = new URLSearchParams();
+    params.append(GOOGLE_FORM_CONFIG.fields.name, formData.name);
+    params.append(GOOGLE_FORM_CONFIG.fields.phone, formData.phone);
+    const discountSummary = formData.discount_rate > 0
+        ? `${formData.discount_rate}% (${(formData.discount_types || []).join(', ')})`
+        : '0%';
+    const extraInfo = [
+        `업종:${formData.industry_type}`,
+        `할인:${discountSummary}`,
+        `최종금액:${formatNumber(formData.final_amount)}원`,
+        formData.inquiry ? `문의:${formData.inquiry}` : ''
+    ].filter(Boolean).join(' / ');
+    params.append(GOOGLE_FORM_CONFIG.fields.email, formData.email);
+    params.append(GOOGLE_FORM_CONFIG.fields.company, formData.company);
+    params.append(GOOGLE_FORM_CONFIG.fields.position, `${formData.position} (${extraInfo})`);
+    if (formData.industry_type && formData.industry_type.includes('프랜차이즈')) {
+        params.append(GOOGLE_FORM_CONFIG.fields.industryType, '프랜차이즈');
+    }
+    params.append('fvv', '1');
+    params.append('pageHistory', '0');
+
+    await fetch(GOOGLE_FORM_CONFIG.actionUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: params.toString()
+    });
+}
+
 // Format number with comma
 function formatNumber(num) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -197,6 +245,13 @@ document.getElementById('applicationForm').addEventListener('submit', async (e) 
                 : 'app_' + Date.now();
             stored.unshift(formData);
             localStorage.setItem('kfceo_applications', JSON.stringify(stored));
+        }
+
+        // Google Form 자동 전송 연동 (https://forms.gle/RHdsgmiMEPujcZSY8)
+        try {
+            await submitToGoogleForm(formData);
+        } catch (googleFormError) {
+            console.warn('구글 폼 자동 전송 중 경고:', googleFormError);
         }
 
         // SMS 알림 발송 (비동기로 처리하여 실패해도 신청은 완료됨)
