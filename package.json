@@ -1,0 +1,12 @@
+{
+  "name": "kfceo-application-local",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KFCEO 신청 사이트 로컬 실행 환경",
+  "scripts": {
+    "start": "node server.cjs",
+    "dev": "node --watch server.cjs",
+    "test": "node --test tests/server.test.cjs"
+  },
+  "engines": { "node": ">=20" }
+}

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 대시보드 - KFCEO</title>
+    <meta name="robots" content="noindex, nofollow">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="KFCEO 명품 19기 관리자 대시보드">
+    <meta property="og:description" content="신청자 관리 및 통계 확인">
+    <meta property="og:image" content="https://www.genspark.ai/api/files/s/4OtWZuBS">
+    
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <!-- Admin Header -->
+    <header class="admin-header">
+        <div class="container">
+            <div class="admin-nav">
+                <div class="logo">
+                    <h1><i class="fas fa-user-shield"></i> KFCEO 관리자</h1>
+                </div>
+                <div class="admin-menu">
+                    <span class="admin-user"><i class="fas fa-user-circle"></i> 관리자</span>
+                    <button id="logoutBtn" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-sign-out-alt"></i> 로그아웃
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Dashboard Content -->
+    <div class="dashboard-container">
+        <div class="container">
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card stat-total">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>총 신청자</h3>
+                        <p class="stat-number" id="totalApplications">0</p>
+                    </div>
+                </div>
+                <div class="stat-card stat-pending">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>대기중</h3>
+                        <p class="stat-number" id="pendingApplications">0</p>
+                    </div>
+                </div>
+                <div class="stat-card stat-approved">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>승인</h3>
+                        <p class="stat-number" id="approvedApplications">0</p>
+                    </div>
+                </div>
+                <div class="stat-card stat-completed">
+                    <div class="stat-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>결제완료</h3>
+                        <p class="stat-number" id="completedApplications">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters and Actions -->
+            <div class="table-controls">
+                <div class="filters">
+                    <div class="filter-group">
+                        <label for="statusFilter">상태:</label>
+                        <select id="statusFilter" class="filter-select">
+                            <option value="">전체</option>
+                            <option value="대기중">대기중</option>
+                            <option value="승인">승인</option>
+                            <option value="거부">거부</option>
+                            <option value="결제완료">결제완료</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="searchInput">검색:</label>
+                        <input type="text" id="searchInput" placeholder="이름, 회사명 검색..." class="search-input">
+                    </div>
+                </div>
+                <div class="actions">
+                    <button id="refreshBtn" class="btn btn-secondary">
+                        <i class="fas fa-sync-alt"></i> 새로고침
+                    </button>
+                    <button id="exportBtn" class="btn btn-primary">
+                        <i class="fas fa-file-excel"></i> 엑셀 다운로드
+                    </button>
+                </div>
+            </div>
+
+            <!-- Applicants Preview Section -->
+            <div class="applicants-preview-card">
+                <h3><i class="fas fa-users"></i> 신청자 현황</h3>
+                <div id="applicantsPreviewList" class="applicants-preview-list">
+                    <!-- 신청자 카드가 동적으로 추가됩니다 -->
+                </div>
+            </div>
+
+            <!-- Applications Table -->
+            <div class="table-card">
+                <h3><i class="fas fa-list"></i> 신청자 목록</h3>
+                <div class="table-responsive">
+                    <table class="applications-table">
+                        <thead>
+                            <tr>
+                                <th>신청일</th>
+                                <th>이름</th>
+                                <th>회사명</th>
+                                <th>업종</th>
+                                <th>연락처</th>
+                                <th>할인율</th>
+                                <th>최종금액</th>
+                                <th>상태</th>
+                                <th>작업</th>
+                            </tr>
+                        </thead>
+                        <tbody id="applicationsTableBody">
+                            <tr>
+                                <td colspan="9" class="empty-state">
+                                    <i class="fas fa-inbox"></i>
+                                    <p>신청 데이터가 없습니다.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Detail Modal -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2><i class="fas fa-user"></i> 신청자 상세 정보</h2>
+                <button class="modal-close" onclick="closeDetailModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="detailContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeDetailModal()" class="btn btn-secondary">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> 상태 변경</h2>
+                <button class="modal-close" onclick="closeEditModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="editStatus">상태 선택</label>
+                    <select id="editStatus" class="form-control">
+                        <option value="대기중">대기중</option>
+                        <option value="승인">승인</option>
+                        <option value="거부">거부</option>
+                        <option value="결제완료">결제완료</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeEditModal()" class="btn btn-secondary">취소</button>
+                <button onclick="saveStatus()" class="btn btn-primary">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirm Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle"></i> 삭제 확인</h2>
+                <button class="modal-close" onclick="closeDeleteModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>정말로 이 신청을 삭제하시겠습니까?</p>
+                <p class="warning-text">이 작업은 되돌릴 수 없습니다.</p>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeDeleteModal()" class="btn btn-secondary">취소</button>
+                <button onclick="confirmDelete()" class="btn btn-danger">삭제</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
